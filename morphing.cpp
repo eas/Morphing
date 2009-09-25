@@ -17,7 +17,6 @@ const LPCTSTR shaderFileName = L"shader.vsh";
 
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
 TCHAR szTitle[MaxLoadString];					// The title bar text
 TCHAR szWindowClass[MaxLoadString];			// the main window class name
 
@@ -103,16 +102,6 @@ HWND CreateMainWindow(HINSTANCE hInstance, int nCmdShow)
    return hWnd;
 }
 
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE:  Processes messages for the main window.
-//
-//  WM_COMMAND	- process the application menu
-//  WM_PAINT	- Paint the main window
-//  WM_DESTROY	- post a quit message and return
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
