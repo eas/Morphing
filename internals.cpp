@@ -11,7 +11,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance, WndProcType wndProc, TCHAR* , TCHAR sz
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= wndProc;
 	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= sizeof(LONG) * 2;
+	wcex.cbWndExtra		= sizeof(LONG) * 4;
 	wcex.hInstance		= hInstance;
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MORPHING));
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
@@ -44,3 +44,10 @@ Window::Window(	HINSTANCE hInstance, int nCmdShow, WndProcType wndProc)
 Window::~Window()
 {
 }
+
+const float SpectatorCoords::deltaFi = D3DX_PI / 24;
+const float SpectatorCoords::deltaTheta = D3DX_PI / 24;
+const float SpectatorCoords::deltaR = 2.5f;
+const float SpectatorCoords::thetaMin = 1e-3f;
+const float SpectatorCoords::thetaMax = D3DX_PI - thetaMin;
+const float SpectatorCoords::rMin = 0.1f;

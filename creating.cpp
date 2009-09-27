@@ -20,48 +20,61 @@ struct VertexWithIndex
 		:vertex(vertex), index(index) {}
 };
 
-VertexWithIndex HalfSum( VertexWithIndex v1, VertexWithIndex v2, Index newIndex )
+Vertex HalfSum( Vertices vertices, Index i1, Index i2 )
 {
-	return VertexWithIndex(	Vertex(	(v1.vertex.x+v2.vertex.x)/2,
-									(v1.vertex.y+v2.vertex.y)/2,
-									(v1.vertex.z+v2.vertex.z)/2,
-									(v1.vertex.color/2+v2.vertex.color/2) ),
-							newIndex );
+	DWORD r, g, b, a;
+	DWORD color1 = vertices[i1].color;
+	DWORD color2 = vertices[i2].color;
+	a = ((color1 & 0xff000000)/0x1000000 + (color2 & 0xff000000)/0x1000000) / 2;
+	r = ((color1 & 0x00ff0000)/0x10000 + (color2 & 0x00ff0000)/0x10000) / 2;
+	g = ((color1 & 0x0000ff00)/0x100 + (color2 & 0x0000ff00)/0x100) / 2;
+	b = ((color1 & 0x000000ff) + (color2 & 0x000000ff)) / 2;
+	return Vertex(	(vertices[i1].x+vertices[i2].x)/2,
+					(vertices[i1].y+vertices[i2].y)/2,
+					(vertices[i1].z+vertices[i2].z)/2,
+					D3DCOLOR_ARGB(a, r, g, b) );
 }
 
-void Tessellation(	VertexWithIndex v1,VertexWithIndex v2,VertexWithIndex v3,
-					std::vector<Vertex> &pyramidVertices,
-					std::vector<Index> pyramidIndices,
-					unsigned curDepth, unsigned maxDepth, Index &nVertices )
+void Tessellation(	Index i1,Index i2,Index i3,
+					Vertices &pyramidVertices,
+					Indices &pyramidIndices,
+					unsigned curDepth, unsigned maxDepth )
 {
 	if( curDepth < maxDepth )
 	{
-		VertexWithIndex newV1 = HalfSum( v1, v3, ++nVertices );
-		pyramidVertices.push_back( newV1.vertex );
+		Index newI = static_cast<Index>(pyramidVertices.size()-1);
 
-		VertexWithIndex newV2 = HalfSum( v1, v2, ++nVertices );
-		pyramidVertices.push_back( newV2.vertex );
+		pyramidVertices.push_back( HalfSum(pyramidVertices, i1, i3) );
+		pyramidVertices.push_back( HalfSum(pyramidVertices, i1, i2) );
+		pyramidVertices.push_back( HalfSum(pyramidVertices, i2, i3) );
 
-		VertexWithIndex newV3 = HalfSum( v2, v3, ++nVertices );
-		pyramidVertices.push_back( newV3.vertex );
 
-		Tessellation(	v1, newV1, newV2,
-						pyramidVertices, pyramidIndices, curDepth-1, maxDepth, nVertices );
+		Tessellation(	i1, newI + 2, newI + 1,
+						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
 
-		Tessellation(	v1, newV3, newV1,
-						pyramidVertices, pyramidIndices, curDepth-1, maxDepth, nVertices );
+		Tessellation(	i2, newI + 3, newI + 2,
+						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
 
-		Tessellation(	v2, newV2, newV3,
-						pyramidVertices, pyramidIndices, curDepth-1, maxDepth, nVertices );
+		Tessellation(	i3, newI + 1, newI + 3,
+						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
 
-		Tessellation(	newV1, newV3, newV2,
-						pyramidVertices, pyramidIndices, curDepth-1, maxDepth, nVertices );
+		Tessellation(	newI + 1, newI + 2, newI + 3,
+						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
 	}
 	else
 	{
-		pyramidIndices.push_back(v1.index);
-		pyramidIndices.push_back(v2.index);
-		pyramidIndices.push_back(v3.index);
+#ifndef TRIANGLES
+		pyramidIndices.push_back(i1);
+		pyramidIndices.push_back(i2);
+		pyramidIndices.push_back(i2);
+		pyramidIndices.push_back(i3);
+		pyramidIndices.push_back(i3);
+		pyramidIndices.push_back(i1);
+#else
+		pyramidIndices.push_back(i1);
+		pyramidIndices.push_back(i2);
+		pyramidIndices.push_back(i3);
+#endif
 	}
 }
 void InitVertices(	unsigned recursionDepth, float edgeSize,
@@ -73,42 +86,37 @@ void InitVertices(	unsigned recursionDepth, float edgeSize,
 
 	std::vector<VertexWithIndex> initialVertices;
 
-	initialVertices.push_back( VertexWithIndex(Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Red ), 0) );
-	initialVertices.push_back( VertexWithIndex(Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Red ), 1) );
-	initialVertices.push_back( VertexWithIndex(Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Red ), 2) );
-	initialVertices.push_back( VertexWithIndex(Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Red ), 3) );
-	initialVertices.push_back( VertexWithIndex(Vertex( 0.0f,  edgeSize*sqrtf(1 - sqrtf(2)/2), 0.0f, Red ), 4) );
-	initialVertices.push_back( VertexWithIndex(Vertex( 0.0f, -edgeSize*sqrtf(1 - sqrtf(2)/2), 0.0f, Red ), 5) );
+	pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Red ) );
+	pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Green ) );
+	pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Cyan ) );
+	pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Magenta ) );
+	pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, White ) );
+	pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Black ) );
 
 
-	for( unsigned i=0; i<=initialVertices.size(); ++i )
-		pyramidVertices.push_back( initialVertices[i].vertex );
+	Tessellation(	0, 4, 1,
+					pyramidVertices, pyramidIndices,
+					1, recursionDepth );
+	Tessellation(	1, 4, 2,
+					pyramidVertices, pyramidIndices,
+					1, recursionDepth );
+	Tessellation(	2, 4, 3,
+					pyramidVertices, pyramidIndices,
+					1, recursionDepth );
+	Tessellation(	3, 4, 0,
+					pyramidVertices, pyramidIndices,
+					1, recursionDepth );
 
-	Index nVertices = initialVertices.size();
-
-	Tessellation(	initialVertices[0], initialVertices[4], initialVertices[1],
+	Tessellation(	0, 1, 5,
 					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[1], initialVertices[4], initialVertices[2],
+					1, recursionDepth );
+	Tessellation(	1, 2, 5,
 					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[2], initialVertices[4], initialVertices[3],
+					1, recursionDepth );
+	Tessellation(	2, 3, 5,
 					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[3], initialVertices[4], initialVertices[0],
+					1, recursionDepth );
+	Tessellation(	3, 0, 5,
 					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-
-	Tessellation(	initialVertices[0], initialVertices[1], initialVertices[5],
-					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[1], initialVertices[2], initialVertices[5],
-					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[2], initialVertices[3], initialVertices[5],
-					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
-	Tessellation(	initialVertices[3], initialVertices[0], initialVertices[5],
-					pyramidVertices, pyramidIndices,
-					0, recursionDepth, nVertices );
+					1, recursionDepth );
 }
