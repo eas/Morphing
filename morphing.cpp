@@ -9,14 +9,15 @@
 #include "colors.h"
 #include "matrices.h"
 
-
-
+#ifndef NDEBUG
+	#define new new( _CLIENT_BLOCK, __FILE__, __LINE__)
+#endif
 const LPCTSTR ShaderFileName = L"shader.vsh";
 const float FrontClippingPlane = 0.5f;
 const float BackClippingPlane = 1.0e13f;
 const float SphereRadius = 10.0f;
 const float PyramidEdge = SphereRadius * sqrtf(2.0f);
-const unsigned TessellationDepth = 3;
+const unsigned TessellationDepth = 0;
 
 inline D3D::Vertex Interpolation(const D3D::Vertex& lhs, const D3D::Vertex& rhs, float weight)
 {
@@ -44,12 +45,8 @@ void Render(D3D::GraphicDevice& device, Vertices &pyramidVertices,
 	vertexBuffer.SetVertices( &vertices[0], vertices.size() );
 	vertexBuffer.Use(0,0);
 
-	D3D::GraphicDevice::DC dc( device, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, Gray, 1.0f, 0 );
-#ifndef TRIANGLES
-	dc.DrawIndexedPrimitive( D3DPT_LINELIST, 0, 0, vertices.size(), 0, indices.size()/2 );
-#else
+	D3D::GraphicDevice::DC dc( device, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, Colors::Gray, 1.0f, 0 );
 	dc.DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, 0, vertices.size(), 0, indices.size()/3 );
-#endif
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -70,6 +67,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		params.MultiSampleType = D3DMULTISAMPLE_NONE;
 
 	D3D::GraphicDevice graphicDevice( mainWindow.GetHWND(), params );
+	//graphicDevice.SetRenderState(
 
 	D3D::VertexDeclaration vertexDeclaration(graphicDevice);
 	vertexDeclaration.Use();
@@ -79,7 +77,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	Vertices pyramidVertices;
 	Indices indices;
-	InitVertices(TessellationDepth, PyramidEdge, pyramidVertices, indices);
+	SecondWay::InitVertices(TessellationDepth, PyramidEdge, pyramidVertices, indices);
+	//FirstWay::InitVertices(TessellationDepth, PyramidEdge, pyramidVertices, indices);
 
 	Vertices sphereVertices = pyramidVertices;
 	for( unsigned i=0; i<sphereVertices.size(); ++i )
@@ -130,6 +129,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			Render(graphicDevice, pyramidVertices, sphereVertices, indices, vertexBuffer, weight);
 		}
     }
+
+	_CrtDumpMemoryLeaks();
 
 	return (int) msg.wParam;
 }

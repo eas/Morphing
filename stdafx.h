@@ -17,5 +17,8 @@
 #include <memory.h>
 #include <tchar.h>
 
+#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC_NEW
+#include <crtdbg.h>
 
 // TODO: reference additional headers your program requires here

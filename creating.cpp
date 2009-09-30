@@ -7,116 +7,247 @@
 #include "colors.h"
 
 #include <vector>
+#include <assert.h>
+#include <algorithm>
+#ifndef NDEBUG
+	#define new new( _CLIENT_BLOCK, __FILE__, __LINE__)
+#endif
 
 using namespace D3D;
 
-struct VertexWithIndex
-{
-	Vertex vertex;
-	Index index;
-
-	VertexWithIndex() {}
-	VertexWithIndex( const Vertex& vertex, const Index index )
-		:vertex(vertex), index(index) {}
-};
-
-Vertex HalfSum( Vertices vertices, Index i1, Index i2 )
+Vertex SumWithWeight( const Vertex &v1, const Vertex &v2, float weight )
 {
 	DWORD r, g, b, a;
-	DWORD color1 = vertices[i1].color;
-	DWORD color2 = vertices[i2].color;
-	a = ((color1 & 0xff000000)/0x1000000 + (color2 & 0xff000000)/0x1000000) / 2;
-	r = ((color1 & 0x00ff0000)/0x10000 + (color2 & 0x00ff0000)/0x10000) / 2;
-	g = ((color1 & 0x0000ff00)/0x100 + (color2 & 0x0000ff00)/0x100) / 2;
-	b = ((color1 & 0x000000ff) + (color2 & 0x000000ff)) / 2;
-	return Vertex(	(vertices[i1].x+vertices[i2].x)/2,
-					(vertices[i1].y+vertices[i2].y)/2,
-					(vertices[i1].z+vertices[i2].z)/2,
+	DWORD color1 = v1.color;
+	DWORD color2 = v2.color;
+	a = static_cast<DWORD>( (color1 & 0xff000000)/0x1000000 * weight +
+		(color2 & 0xff000000)/0x1000000 * (1-weight) );
+	r = static_cast<DWORD>( (color1 & 0x00ff0000)/0x10000 * weight +
+		(color2 & 0x00ff0000)/0x10000 * (1-weight) );
+	g = static_cast<DWORD>( (color1 & 0x0000ff00)/0x100 * weight +
+		(color2 & 0x0000ff00)/0x100 * (1-weight) );
+	b = static_cast<DWORD>( (color1 & 0x000000ff) * weight +
+		(color2 & 0x000000ff) * (1-weight) );
+
+	return Vertex(	(v1.x*weight+v2.x*(1-weight)),
+					(v1.y*weight+v2.y*(1-weight)),
+					(v1.z*weight+v2.z*(1-weight)),
 					D3DCOLOR_ARGB(a, r, g, b) );
 }
 
-void Tessellation(	Index i1,Index i2,Index i3,
-					Vertices &pyramidVertices,
-					Indices &pyramidIndices,
-					unsigned curDepth, unsigned maxDepth )
+
+
+namespace FirstWay
 {
-	if( curDepth < maxDepth )
+	inline Vertex HalfSum( const Vertices &vertices, Index i1, Index i2 )
 	{
-		Index newI = static_cast<Index>(pyramidVertices.size()-1);
-
-		pyramidVertices.push_back( HalfSum(pyramidVertices, i1, i3) );
-		pyramidVertices.push_back( HalfSum(pyramidVertices, i1, i2) );
-		pyramidVertices.push_back( HalfSum(pyramidVertices, i2, i3) );
-
-
-		Tessellation(	i1, newI + 2, newI + 1,
-						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
-
-		Tessellation(	i2, newI + 3, newI + 2,
-						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
-
-		Tessellation(	i3, newI + 1, newI + 3,
-						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
-
-		Tessellation(	newI + 1, newI + 2, newI + 3,
-						pyramidVertices, pyramidIndices, curDepth+1, maxDepth );
+		return SumWithWeight( vertices[i1], vertices[i2], 0.5f );
 	}
-	else
+
+	void Tessellation(	Index i1,Index i2,Index i3,
+						Vertices &vertices,
+						Indices &indices,
+						unsigned curDepth, unsigned maxDepth )
 	{
-#ifndef TRIANGLES
-		pyramidIndices.push_back(i1);
-		pyramidIndices.push_back(i2);
-		pyramidIndices.push_back(i2);
-		pyramidIndices.push_back(i3);
-		pyramidIndices.push_back(i3);
-		pyramidIndices.push_back(i1);
-#else
-		pyramidIndices.push_back(i1);
-		pyramidIndices.push_back(i2);
-		pyramidIndices.push_back(i3);
-#endif
+		if( curDepth < maxDepth )
+		{
+			Index newI = static_cast<Index>(vertices.size()-1);
+
+			vertices.push_back( HalfSum(vertices, i1, i3) );
+			vertices.push_back( HalfSum(vertices, i1, i2) );
+			vertices.push_back( HalfSum(vertices, i2, i3) );
+
+
+			Tessellation(	i1, newI + 2, newI + 1,
+							vertices, indices, curDepth+1, maxDepth );
+
+			Tessellation(	i2, newI + 3, newI + 2,
+							vertices, indices, curDepth+1, maxDepth );
+
+			Tessellation(	i3, newI + 1, newI + 3,
+							vertices, indices, curDepth+1, maxDepth );
+
+			Tessellation(	newI + 1, newI + 2, newI + 3,
+							vertices, indices, curDepth+1, maxDepth );
+		}
+		else
+		{
+
+			indices.push_back(i1);
+			indices.push_back(i2);
+			indices.push_back(i3);
+		}
 	}
-}
-void InitVertices(	unsigned recursionDepth, float edgeSize,
-					std::vector<Vertex> &pyramidVertices,
-					std::vector<Index> &pyramidIndices)
+	void InitVertices(	unsigned recursionDepth, float edgeSize,
+						Vertices &pyramidVertices,
+						Indices &pyramidIndices)
+	{
+		pyramidVertices.erase( pyramidVertices.begin(), pyramidVertices.end() );
+		pyramidIndices.erase( pyramidIndices.begin(), pyramidIndices.end() );
+
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Red ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Green ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Cyan ) );
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Magenta ) );
+		pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::White ) );
+		pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::Black ) );
+
+
+		Tessellation(	0, 4, 1,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	1, 4, 2,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	2, 4, 3,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	3, 4, 0,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+
+		Tessellation(	0, 1, 5,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	1, 2, 5,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	2, 3, 5,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+		Tessellation(	3, 0, 5,
+						pyramidVertices, pyramidIndices,
+						0, recursionDepth );
+	}
+} // namespace FirstWay
+
+namespace SecondWay
 {
-	pyramidVertices.erase( pyramidVertices.begin(), pyramidVertices.end() );
-	pyramidIndices.erase( pyramidIndices.begin(), pyramidIndices.end() );
+	class Node
+	{
+		friend Node* GetOrCreateChild(Node&, Node&, Vertices&);
+	public:
+		Node(Node* parent1, Node* parent2, Index index);
+		~Node();
+		Node* AddChild(Node* node);
+		bool IsParentOf(const Node* node);
+		bool operator==(const Node& other) const;
+		Index GetIndex() const;
+	private:
+		typedef std::vector<Node*> Childs;
 
-	std::vector<VertexWithIndex> initialVertices;
+		Node *parent1_, *parent2_;
+		Childs childs_;
+		Index index_;
+	};
+	Node::Node(Node* parent1, Node* parent2, Index index)
+		: parent1_(parent1), parent2_(parent2), index_(index)
+	{
+	}
+	Node::~Node()
+	{
+		for( Childs::iterator i=childs_.begin(); i!=childs_.end(); ++i )
+		{
+			if( (*i)->parent1_ == this )
+			{
+				(*i)->parent1_ = NULL;
+			}
+			if( (*i)->parent2_ == this )
+			{
+				(*i)->parent2_ = NULL;
+			}
+			if( (*i)->parent1_ == NULL && (*i)->parent2_ == NULL )
+			{
+				delete *i;
+			}
+		}
+	}
+	Node* Node::AddChild(Node* node)
+	{
+		childs_.push_back(node);
+		return node;
+	}
+	bool Node::IsParentOf(const Node *node)
+	{
+		return (std::find(childs_.begin(), childs_.end(), node) != childs_.end());
+	}
+	bool Node::operator==(const Node& other) const
+	{
+		return index_ == other.index_;
+	}
+	Index Node::GetIndex() const
+	{
+		return index_;
+	}
+	Node* GetOrCreateChild(Node& parent1, Node& parent2, Vertices& vertices)
+	{
+		for( Node::Childs::const_iterator i=parent1.childs_.begin(); i!=parent1.childs_.end(); ++i )
+		{
+			if( parent2.IsParentOf( *i ) )
+				return *i;
+		}
+		vertices.push_back( SumWithWeight(	vertices[parent1.GetIndex()],
+											vertices[parent2.GetIndex()],
+											0.5f ));
+		Node* node = new Node(&parent1, &parent2, vertices.size()-1);
+		parent1.AddChild(node);
+		parent2.AddChild(node);
+		return node;
 
-	pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Red ) );
-	pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Green ) );
-	pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Cyan ) );
-	pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Magenta ) );
-	pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, White ) );
-	pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Black ) );
+	}
+	void Tessellation(	Node& n1, Node& n2, Node& n3, Vertices& vertices, Indices& indices,
+						unsigned curDepth, unsigned maxDepth )
+	{
+		if( curDepth<maxDepth )
+		{
+			Node *n12 = GetOrCreateChild(n1, n2, vertices);
+			Node *n23 = GetOrCreateChild(n2, n3, vertices);
+			Node *n31 = GetOrCreateChild(n3, n1, vertices);
+			Tessellation( n1, *n12, *n31, vertices, indices, curDepth+1, maxDepth );
+			Tessellation( n2, *n23, *n12, vertices, indices, curDepth+1, maxDepth );
+			Tessellation( n3, *n31, *n23, vertices, indices, curDepth+1, maxDepth );
+			Tessellation( *n12, *n23, *n31, vertices, indices, curDepth+1, maxDepth );
 
+		}
+		else
+		{
+			indices.push_back( n1.GetIndex() );
+			indices.push_back( n2.GetIndex() );
+			indices.push_back( n3.GetIndex() );
+		}
+	}
 
-	Tessellation(	0, 4, 1,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	1, 4, 2,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	2, 4, 3,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	3, 4, 0,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
+	void InitVertices(	unsigned recursionDepth, float edgeSize,
+						Vertices &pyramidVertices,
+						Indices &pyramidIndices)
+	{
+		pyramidVertices.erase( pyramidVertices.begin(), pyramidVertices.end() );
+		pyramidIndices.erase( pyramidIndices.begin(), pyramidIndices.end() );
+	
+		std::vector<Node> nodes;
 
-	Tessellation(	0, 1, 5,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	1, 2, 5,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	2, 3, 5,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-	Tessellation(	3, 0, 5,
-					pyramidVertices, pyramidIndices,
-					1, recursionDepth );
-}
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Red ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Green ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Cyan ) );
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Magenta ) );
+		pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::White ) );
+		pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::Black ) );
+		
+		for( Index index=0; index<6; ++index )
+		{
+			nodes.push_back( Node(NULL, NULL, index) );
+		}
+
+		Tessellation( nodes[0], nodes[4], nodes[1], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[1], nodes[4], nodes[2], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[2], nodes[4], nodes[3], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[3], nodes[4], nodes[0], pyramidVertices, pyramidIndices, 0, recursionDepth );
+
+		Tessellation( nodes[0], nodes[1], nodes[5], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[1], nodes[2], nodes[5], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[2], nodes[3], nodes[5], pyramidVertices, pyramidIndices, 0, recursionDepth );
+		Tessellation( nodes[3], nodes[0], nodes[5], pyramidVertices, pyramidIndices, 0, recursionDepth );
+			
+	}
+
+} // namespace SecondWay
