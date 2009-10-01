@@ -17,7 +17,7 @@ const float FrontClippingPlane = 0.5f;
 const float BackClippingPlane = 1.0e13f;
 const float SphereRadius = 10.0f;
 const float PyramidEdge = SphereRadius * sqrtf(2.0f);
-const unsigned TessellationDepth = 0;
+const unsigned TessellationDepth = 3;
 
 inline D3D::Vertex Interpolation(const D3D::Vertex& lhs, const D3D::Vertex& rhs, float weight)
 {
@@ -32,19 +32,8 @@ inline D3D::Vertex Interpolation(const D3D::Vertex& lhs, const D3D::Vertex& rhs,
 
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 
-void Render(D3D::GraphicDevice& device, Vertices &pyramidVertices,
-			Vertices &sphereVertices, Indices &indices,
-			D3D::VertexBuffer &vertexBuffer, float weight)
+void Render(D3D::GraphicDevice& device, Vertices &vertices,Indices &indices)
 {
-	Vertices vertices;
-	vertices.reserve(pyramidVertices.size());
-	for( unsigned i=0; i<pyramidVertices.size(); ++i )
-	{
-		vertices.push_back(Interpolation( pyramidVertices[i], sphereVertices[i], weight ));
-	}
-	vertexBuffer.SetVertices( &vertices[0], vertices.size() );
-	vertexBuffer.Use(0,0);
-
 	D3D::GraphicDevice::DC dc( device, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, Colors::Gray, 1.0f, 0 );
 	dc.DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, 0, vertices.size(), 0, indices.size()/3 );
 }
@@ -67,30 +56,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		params.MultiSampleType = D3DMULTISAMPLE_NONE;
 
 	D3D::GraphicDevice graphicDevice( mainWindow.GetHWND(), params );
-	//graphicDevice.SetRenderState(
+	graphicDevice.SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
 
 	D3D::VertexDeclaration vertexDeclaration(graphicDevice);
 	vertexDeclaration.Use();
 
 	D3D::Shader shader(graphicDevice, ShaderFileName);
 	shader.Use();
+	shader.SetConstantF( 5, &SphereRadius, 1 );
 
 	Vertices pyramidVertices;
 	Indices indices;
 	SecondWay::InitVertices(TessellationDepth, PyramidEdge, pyramidVertices, indices);
 	//FirstWay::InitVertices(TessellationDepth, PyramidEdge, pyramidVertices, indices);
 
-	Vertices sphereVertices = pyramidVertices;
-	for( unsigned i=0; i<sphereVertices.size(); ++i )
-	{
-		D3D::Vertex& vert = sphereVertices[i];
-		const float len = sqrtf(vert.x*vert.x+vert.y*vert.y+vert.z*vert.z);
-		vert.x *= (SphereRadius/len);
-		vert.y *= (SphereRadius/len);
-		vert.z *= (SphereRadius/len);
-	}
-
 	D3D::VertexBuffer vertexBuffer(graphicDevice, pyramidVertices.size());
+	vertexBuffer.SetVertices( &pyramidVertices[0], pyramidVertices.size() );
+	vertexBuffer.Use(0, 0);
 
 	D3D::IndexBuffer indexBuffer(graphicDevice, indices.size());
 	indexBuffer.SetIndices(&indices[0], indices.size());
@@ -126,7 +108,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         }
         else
 		{
-			Render(graphicDevice, pyramidVertices, sphereVertices, indices, vertexBuffer, weight);
+			Render(graphicDevice, pyramidVertices, indices);
 		}
     }
 
@@ -182,11 +164,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			int *time = NULL;
 			float *weight = NULL;
+			D3D::Shader *shader = NULL;
 			time = reinterpret_cast<int*>(GetWindowLong(hWnd, 2*sizeof(LONG)));
 			weight = reinterpret_cast<float*>(GetWindowLong(hWnd, 3*sizeof(LONG)));
+			shader = reinterpret_cast<D3D::Shader*>(GetWindowLong(hWnd, sizeof(LONG)));
 			++*time;
-			//if( *time < 9 )
-				*weight = -(-(*time % 100) + 50)*(*time % 100 - 50) / 2500.0f;
+			*weight = -(-(*time % 100) + 50)*(*time % 100 - 50) / 2500.0f;
+			shader->SetConstantF(4, weight, 1);
 			break;
 
 		}
