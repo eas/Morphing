@@ -52,7 +52,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	D3D::Shader shader(graphicDevice, ShaderFileName);
 	shader.Use();
-	shader.SetConstantF( 5, &SphereRadius, 1 );
+	shader.SetConstantF( 4, SphereRadius, 1 );
 
 	Vertices pyramidVertices;
 	Indices indices;
@@ -159,7 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			shader = reinterpret_cast<D3D::Shader*>(GetWindowLong(hWnd, sizeof(LONG)));
 			++*time;
 			*weight = -(-(*time % 100) + 50)*(*time % 100 - 50) / 2500.0f;
-			shader->SetConstantF(4, weight, 1);
+			shader->SetConstantF(5, *weight, 1);
 			break;
 
 		}
