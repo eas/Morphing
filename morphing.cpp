@@ -17,18 +17,7 @@ const float FrontClippingPlane = 0.5f;
 const float BackClippingPlane = 1.0e13f;
 const float SphereRadius = 10.0f;
 const float PyramidEdge = SphereRadius * sqrtf(2.0f);
-const unsigned TessellationDepth = 3;
-
-inline D3D::Vertex Interpolation(const D3D::Vertex& lhs, const D3D::Vertex& rhs, float weight)
-{
-	const float weight_ = 1-weight;
-	return D3D::Vertex(	lhs.x*weight+rhs.x*weight_,
-						lhs.y*weight+rhs.y*weight_,
-						lhs.z*weight+rhs.z*weight_,
-						static_cast<DWORD>(lhs.color) ); //*weight +rhs.color*weight_));
-						//Yellow );
-}
-
+const unsigned TessellationDepth = 5;
 
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -139,10 +128,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				pSpectatorCoords->IncTheta();
 				break;
 			case VK_RIGHT:
-				pSpectatorCoords->IncFi();
+				pSpectatorCoords->IncPhi();
 				break;
 			case VK_LEFT:
-				pSpectatorCoords->DecFi();
+				pSpectatorCoords->DecPhi();
 				break;
 			case VK_NEXT:
 			case 'S':

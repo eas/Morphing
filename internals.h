@@ -51,29 +51,29 @@ private:
 class SpectatorCoords
 {
 public:
-	SpectatorCoords(float r, float theta, float fi)
-		:r_(r), theta_(theta), fi_(fi)
+	SpectatorCoords(float r, float theta, float phi)
+		:r_(r), theta_(theta), phi_(phi)
 	{
 	}
 	const D3DXVECTOR3 GetCartesianCoords() const
 	{
-		return D3DXVECTOR3(	r_*sinf(theta_)*cosf(fi_),
+		return D3DXVECTOR3(	r_*sinf(theta_)*cosf(phi_),
 							r_*cosf(theta_),
-							r_*sinf(theta_)*sinf(fi_) );
+							r_*sinf(theta_)*sinf(phi_) );
 	}
-	void IncTheta() { if((theta_+=deltaTheta) > thetaMax) theta_= thetaMax; }
-	void DecTheta() { if((theta_-=deltaTheta) < thetaMin) theta_= thetaMin; }
-	void IncFi() { fi_ += deltaFi; }
-	void DecFi() { fi_ -= deltaFi; }
+	void IncTheta() { if((theta_+=deltaTheta) > thetaMax){ theta_= thetaMax; } }
+	void DecTheta() { if((theta_-=deltaTheta) < thetaMin){ theta_= thetaMin; } }
+	void IncPhi() { phi_ += deltaPhi; }
+	void DecPhi() { phi_ -= deltaPhi; }
 	void IncR() { r_ += deltaR; }
-	void DecR() { if((r_-=deltaR) < rMin) r_ = rMin; }
+	void DecR() { if((r_-=deltaR) < rMin){ r_ = rMin; } }
 
 
 private:
-	float r_, theta_, fi_;
+	float r_, theta_, phi_;
 
 public:
-	static const float deltaFi;
+	static const float deltaPhi;
 	static const float deltaTheta;
 	static const float deltaR;
 	static const float thetaMin;

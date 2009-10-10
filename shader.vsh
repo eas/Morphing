@@ -15,6 +15,7 @@ dcl_color v1
 	;r1.x = sphereRadius * weight / sqrt(v^2)
 	mul r1.x, r1.x, c5.x
 	
+	;to initialize r1.w
 	mov r1.w, r1.x
 	sge r1.w, r1.w, r1.w
 	mul r1.xyz, v0.xyz, r1.xxx
