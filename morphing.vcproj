@@ -176,15 +176,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\creating.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\internals.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\morphing.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\sphere.cpp"
 				>
 			</File>
 			<File
@@ -214,19 +210,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\creating.h"
-				>
-			</File>
-			<File
-				RelativePath=".\internals.h"
-				>
-			</File>
-			<File
 				RelativePath=".\morphing.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sphere.h"
 				>
 			</File>
 			<File
@@ -266,6 +258,10 @@
 		</File>
 		<File
 			RelativePath=".\shader.vsh"
+			>
+		</File>
+		<File
+			RelativePath=".\sphere.vsh"
 			>
 		</File>
 	</Files>
