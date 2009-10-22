@@ -12,8 +12,9 @@ dp3 r1, v0, v0			; r1.x = v0*v0
 rsq r0.x, r1.x			; r0.x = 1/sqrt(r0.x)
 mul r0.x, r0.x, c4.x	; r0.x = R/|r|
 sge r1.x, r1.x, r1.x	; r1.x = 1
-sub r1.x, r1.x, c5.x	; r1.x = 1-w
-mul r0.x, r0.x, r1.x	; r0.x = R/|r|*(1-w)
+
+mad r0.x, -c5.x, r0.x , r0.x
+
 add r0.x, r0.x, c5.x	; r0.x = w+R/|r|*(1-w)
 rcp r0.x, r0.x			; r0.x = 1/(w+R/|r|*(1-w))
 

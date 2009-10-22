@@ -6,6 +6,7 @@
 
 #include "internals.h"
 #include "creating.h"
+#include "graphics.h"
 #include "colors.h"
 #include "matrices.h"
 
@@ -45,7 +46,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		params.MultiSampleType = D3DMULTISAMPLE_NONE;
 
 	D3D::GraphicDevice graphicDevice( mainWindow.GetHWND(), params );
-	graphicDevice.SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
+	//graphicDevice.SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
 
 	D3D::VertexDeclaration vertexDeclaration(graphicDevice);
 	vertexDeclaration.Use();

@@ -12,7 +12,7 @@
 #ifndef NDEBUG
 	#define new new( _CLIENT_BLOCK, __FILE__, __LINE__)
 #endif
-
+#define RANDOM_COLORS
 using namespace D3D;
 
 Vertex SumWithWeight( const Vertex &v1, const Vertex &v2, float weight )
@@ -32,7 +32,11 @@ Vertex SumWithWeight( const Vertex &v1, const Vertex &v2, float weight )
 	return Vertex(	(v1.x*weight+v2.x*(1-weight)),
 					(v1.y*weight+v2.y*(1-weight)),
 					(v1.z*weight+v2.z*(1-weight)),
+#ifndef RANDOM_COLORS
 					D3DCOLOR_ARGB(a, r, g, b) );
+#else
+					Colors::Random() );
+#endif
 }
 
 
@@ -84,14 +88,21 @@ namespace FirstWay
 	{
 		pyramidVertices.erase( pyramidVertices.begin(), pyramidVertices.end() );
 		pyramidIndices.erase( pyramidIndices.begin(), pyramidIndices.end() );
-
+#ifndef RANDOM_COLORS
 		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Red ) );
 		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Green ) );
 		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Cyan ) );
 		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Magenta ) );
 		pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::White ) );
 		pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::Black ) );
-
+#else
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Random() ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f, -edgeSize/ 2, Colors::Random() ) );
+		pyramidVertices.push_back( Vertex(  edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Random() ) );
+		pyramidVertices.push_back( Vertex( -edgeSize/2, 0.0f,  edgeSize/ 2, Colors::Random() ) );
+		pyramidVertices.push_back( Vertex( 0.0f,  edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::Random() ) );
+		pyramidVertices.push_back( Vertex( 0.0f, -edgeSize*sqrtf(2.0f)/2, 0.0f, Colors::Random() ) );
+#endif
 
 		Tessellation(	0, 4, 1,
 						pyramidVertices, pyramidIndices,
@@ -184,7 +195,9 @@ namespace SecondWay
 		for( Node::Childs::const_iterator i=parent1.childs_.begin(); i!=parent1.childs_.end(); ++i )
 		{
 			if( parent2.IsParentOf( *i ) )
+			{
 				return *i;
+			}
 		}
 		vertices.push_back( SumWithWeight(	vertices[parent1.GetIndex()],
 											vertices[parent2.GetIndex()],
