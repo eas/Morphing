@@ -9,11 +9,12 @@
 #ifndef NDEBUG
 	#define new new( _CLIENT_BLOCK, __FILE__, __LINE__)
 #endif
-using namespace D3D;
+
 
 typedef Sphere::Vertex Vertex;
+typedef D3D::Index Index;
 typedef std::vector<Vertex> Vertices;
-typedef std::vector<D3D::Index> Indices;
+typedef std::vector<Index> Indices;
 
 static const D3DVERTEXELEMENT9 DefaultVertexDeclaration[] = {
 		{0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
@@ -58,7 +59,7 @@ Sphere::~Sphere()
 void Sphere::Draw()
 {
 	float time = static_cast<float>(clock()) / CLOCKS_PER_SEC;
-	float weight = (sinf(freq_*time * (2*D3DX_PI)) + 1)/2;
+	float weight = 1-(-cosf(freq_*time * (2*D3DX_PI)) + 1)/2;
 	vertexBuffer_.Use(0,0);
 	indexBuffer_.Use();
 	vertexDeclaration_.Use();
@@ -68,7 +69,15 @@ void Sphere::Draw()
 	shader_.SetConstantF(5, weight);
 	vertexDeclaration_.Use();
 
-	device_->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, nVertices_, 0, nPrimitives_);
+	device_.SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+	device_.SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+	device_.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, nVertices_, 0, nPrimitives_);
+
+	device_.SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+	device_.SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
+	device_.SetRenderState( D3DRS_SRCBLEND, D3DBLEND_ZERO );
+	device_.SetRenderState( D3DRS_DESTBLEND, D3DBLEND_ZERO );
+	device_.DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, nVertices_, 0, nPrimitives_);
 }
 void Sphere::SetPositionMatrix(const D3DXMATRIX& positionMatrix)
 {

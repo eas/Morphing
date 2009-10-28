@@ -17,7 +17,6 @@ const LPCTSTR ShaderFileName = L"shader.vsh";
 const float FrontClippingPlane = 0.5f;
 const float BackClippingPlane = 1.0e13f;
 const float SphereRadius = 10.0f;
-const float PyramidEdge = SphereRadius * sqrtf(2.0f);
 const unsigned TessellationDepth = 5;
 const float Freq = 1.0f;
 
